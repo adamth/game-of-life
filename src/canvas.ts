@@ -4,7 +4,7 @@ let width: number;
 let height: number;
 let rows: number;
 let cols: number;
-const cellSize = 10;
+const cellSize = 6;
 const offset = 80;
 
 const state: { board: Array<0 | 1>; generation: number; isRunning: boolean; isMouseDown: boolean } = {
@@ -24,7 +24,11 @@ export const setup = () => {
   body.appendChild(canvas);
   canvas.addEventListener('mousedown', () => (state.isMouseDown = true));
   canvas.addEventListener('mouseup', () => (state.isMouseDown = false));
+  canvas.addEventListener('touchstart', () => (state.isMouseDown = true));
+  canvas.addEventListener('touchstart', tapHandler);
+  canvas.addEventListener('touchend', () => (state.isMouseDown = false));
   canvas.addEventListener('mousemove', handleCanvasDrag);
+  canvas.addEventListener('touchmove', (e) => handleCanvasDrag(e.touches[0]));
   rows = Math.floor((window.innerHeight * 2) / cellSize);
   cols = Math.floor((window.innerWidth - 2) / cellSize);
   const cells = rows * cols;
@@ -32,7 +36,17 @@ export const setup = () => {
   state.board = Array(cells).fill(0, 0, cells);
 };
 
-const handleCanvasDrag = (e: MouseEvent) => {
+let tappedTwice = false;
+const tapHandler = () => {
+  if(!tappedTwice) {
+    tappedTwice = true;
+    setTimeout(() => tappedTwice = false, 200);
+  } else {
+    state.isRunning = !state.isRunning;
+  }
+}
+
+const handleCanvasDrag = (e: MouseEvent | Touch) => {
   const coord = {
     x: Math.floor(e.clientX / cellSize) + 1,
     y: Math.floor((e.clientY - offset + cellSize / 2) / cellSize),
@@ -135,11 +149,13 @@ const draw = () => {
   });
 };
 
+let iteration = 0;
 const loop = () => {
-  if (state.isRunning) {
+  if (state.isRunning && iteration % 3 === 0) {
     update(state);
   }
   draw();
+  iteration = iteration + 1;
 
   window.requestAnimationFrame(loop);
 };
